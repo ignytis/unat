@@ -1,32 +1,19 @@
-import {
-  dialog,
-  Menu,
-  shell,
-  BrowserWindow,
-  SaveDialogReturnValue,
-} from 'electron';
+import { dialog, Menu, shell, BrowserWindow } from 'electron';
 import path from 'path';
 
 import projectDb from '../db/project';
 import syncSchema from '../db/project/schema';
 
 async function onNewClick(): Promise<void> {
-  let result: SaveDialogReturnValue | null = null;
-  try {
-    result = await dialog.showSaveDialog({
-      title: 'Create a new project',
-      defaultPath: path.join(__dirname, '../assets/my_project.unat'),
-      filters: [{ name: 'UNAT Project', extensions: ['unat'] }],
-    });
-  } catch (e) {
-    console.error(e);
-    return;
-  }
+  const filePath: string | undefined = dialog.showSaveDialogSync({
+    title: 'Create a new project',
+    defaultPath: path.join(__dirname, '../my_project.unat'),
+    filters: [{ name: 'UNAT Project', extensions: ['unat'] }],
+  });
 
-  if (result.canceled || result.filePath === undefined) {
+  if (filePath === undefined) {
     return;
   }
-  const { filePath } = result;
 
   projectDb.open(filePath);
   const db = projectDb.get();
@@ -35,6 +22,27 @@ async function onNewClick(): Promise<void> {
     return;
   }
   syncSchema(db);
+}
+
+function onOpenClick(): void {
+  // TODO: check the "promptToCreate" property. Potentially can use it in new file creation
+  // TODO: Can New / Open methods be merged or at least some functionality be re-used?
+  const files: string[] | undefined = dialog.showOpenDialogSync({
+    title: 'Open a project',
+    filters: [{ name: 'UNAT Project', extensions: ['unat'] }],
+    properties: ['openFile'],
+  });
+
+  if (files === undefined) {
+    return;
+  }
+  const filePath = files[0];
+
+  projectDb.open(filePath);
+  const db = projectDb.get();
+  if (db === null) {
+    console.error('Database is not initialized.');
+  }
 }
 
 export default class MenuBuilder {
@@ -87,6 +95,7 @@ export default class MenuBuilder {
           {
             label: '&Open',
             accelerator: 'Ctrl+O',
+            click: onOpenClick,
           },
           {
             label: '&Close',
