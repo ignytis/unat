@@ -1,8 +1,41 @@
-import { dialog, Menu, shell, BrowserWindow } from 'electron';
+import {
+  dialog,
+  Menu,
+  shell,
+  BrowserWindow,
+  SaveDialogReturnValue,
+} from 'electron';
 import path from 'path';
 
 import projectDb from '../db/project';
 import syncSchema from '../db/project/schema';
+
+async function onNewClick(): Promise<void> {
+  let result: SaveDialogReturnValue | null = null;
+  try {
+    result = await dialog.showSaveDialog({
+      title: 'Create a new project',
+      defaultPath: path.join(__dirname, '../assets/my_project.unat'),
+      filters: [{ name: 'UNAT Project', extensions: ['unat'] }],
+    });
+  } catch (e) {
+    console.error(e);
+    return;
+  }
+
+  if (result.canceled || result.filePath === undefined) {
+    return;
+  }
+  const { filePath } = result;
+
+  projectDb.open(filePath);
+  const db = projectDb.get();
+  if (db === null) {
+    console.error('Database is not initialized.');
+    return;
+  }
+  syncSchema(db);
+}
 
 export default class MenuBuilder {
   mainWindow: BrowserWindow;
@@ -49,35 +82,7 @@ export default class MenuBuilder {
           {
             label: '&New',
             accelerator: 'Ctrl+N',
-            click: () => {
-              dialog
-                .showSaveDialog({
-                  title: 'Create a new project',
-                  defaultPath: path.join(
-                    __dirname,
-                    '../assets/my_project.unat',
-                  ),
-                  filters: [{ name: 'UNAT Project', extensions: ['unat'] }],
-                })
-                .then((result) => {
-                  if (result.canceled || result.filePath === undefined) {
-                    return null;
-                  }
-                  const { filePath } = result;
-
-                  projectDb.open(filePath);
-                  const db = projectDb.get();
-                  if (db === null) {
-                    console.error('Database is not initialized.');
-                    return null;
-                  }
-                  syncSchema(db);
-                  return null;
-                })
-                .catch((e) => {
-                  console.error(e);
-                });
-            },
+            click: onNewClick,
           },
           {
             label: '&Open',
