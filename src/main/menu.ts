@@ -24,32 +24,12 @@ async function onNewClick(): Promise<void> {
   syncSchema(db);
 }
 
-function onOpenClick(): void {
-  // TODO: check the "promptToCreate" property. Potentially can use it in new file creation
-  // TODO: Can New / Open methods be merged or at least some functionality be re-used?
-  const files: string[] | undefined = dialog.showOpenDialogSync({
-    title: 'Open a project',
-    filters: [{ name: 'UNAT Project', extensions: ['unat'] }],
-    properties: ['openFile'],
-  });
-
-  if (files === undefined) {
-    return;
-  }
-  const filePath = files[0];
-
-  projectDb.open(filePath);
-  const db = projectDb.get();
-  if (db === null) {
-    console.error('Database is not initialized.');
-  }
-}
-
 export default class MenuBuilder {
   mainWindow: BrowserWindow;
 
   constructor(mainWindow: BrowserWindow) {
     this.mainWindow = mainWindow;
+    this.onOpenClick = this.onOpenClick.bind(this);
   }
 
   buildMenu(): Menu {
@@ -95,7 +75,7 @@ export default class MenuBuilder {
           {
             label: '&Open',
             accelerator: 'Ctrl+O',
-            click: onOpenClick,
+            click: this.onOpenClick,
           },
           {
             label: '&Close',
@@ -120,5 +100,28 @@ export default class MenuBuilder {
     ];
 
     return templateDefault;
+  }
+
+  onOpenClick(): void {
+    // TODO: check the "promptToCreate" property. Potentially can use it in new file creation
+    // TODO: Can New / Open methods be merged or at least some functionality be re-used?
+    const files: string[] | undefined = dialog.showOpenDialogSync({
+      title: 'Open a project',
+      filters: [{ name: 'UNAT Project', extensions: ['unat'] }],
+      properties: ['openFile'],
+    });
+
+    if (files === undefined) {
+      return;
+    }
+    const filePath = files[0];
+
+    projectDb.open(filePath);
+    const db = projectDb.get();
+    if (db === null) {
+      console.error('Database is not initialized.');
+    }
+
+    this.mainWindow.webContents.send('app:project:loaded');
   }
 }
