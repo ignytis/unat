@@ -1,28 +1,40 @@
-import React, { PropsWithChildren, ReactNode } from 'react';
-import { styled } from '@mui/material/styles';
+import React, { PropsWithChildren } from 'react';
+import { useNavigate } from 'react-router-dom';
+
 import Box from '@mui/material/Box';
-import Paper from '@mui/material/Paper';
 import Grid from '@mui/material/Grid';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
 
-const Item = styled(Paper)(({ theme }) => ({
-  backgroundColor: theme.palette.mode === 'dark' ? '#1A2027' : '#fff',
-  ...theme.typography.body2,
-  padding: theme.spacing(1),
-  textAlign: 'center',
-  color: theme.palette.text.secondary,
-}));
-
-type Props = {};
+type Props = {
+  activePage: string;
+};
 
 export default function ProjectLayout(props: PropsWithChildren<Props>) {
-  const { children } = props;
+  const navigate = useNavigate();
+  const { activePage, children } = props;
+
+  const onChange = (event: React.SyntheticEvent, newValue: string) => {
+    if (!['dashboard', 'brokers'].includes(newValue)) {
+      return;
+    }
+
+    navigate(`/project/${newValue}`);
+  };
+
   return (
     <Box sx={{ flexGrow: 1 }}>
       <Grid container spacing={2}>
-        <Grid item xs={2}>
-          <Item>xs=8</Item>
+        <Grid item xs={12}>
+          <Tabs onChange={onChange} value={activePage}>
+            <Tab label="Dashboard" value="dashboard" />
+            <Tab label="Brokers" value="brokers" />
+            <Tab label="Securities" disabled value="securities" />
+            <Tab label="Accounts" disabled value="accounts" />
+            <Tab label="Operations" disabled value="operations" />
+          </Tabs>
         </Grid>
-        <Grid item xs={10}>
+        <Grid item xs={12}>
           {children}
         </Grid>
       </Grid>
